@@ -11,9 +11,11 @@ model GalleryItem {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   title     String
   category  String // "event" | "corporate" | "vip" | "venue"
-  imageUrl  String // Cloudinary secure_url
-  publicId  String // Cloudinary public_id (for deletion)
-  assetType String   @default("image") // "image" | "video"
+  location    String?
+  description String?
+  imageUrl    String // Cloudinary secure_url
+  publicId    String // Cloudinary public_id (for deletion)
+  assetType   String   @default("image") // "image" | "video"
   featured  Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

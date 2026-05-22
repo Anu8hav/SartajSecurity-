@@ -1,5 +1,6 @@
 import React from "react";
 import { currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 
 export const metadata = {
@@ -15,6 +16,11 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const user = await currentUser();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
+
   const operatorName = user?.firstName ? `${user.firstName.toUpperCase()}` : "OPERATOR-01";
 
   return (

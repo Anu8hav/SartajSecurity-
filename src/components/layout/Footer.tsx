@@ -30,7 +30,6 @@ export default function Footer() {
                 { href: "/", label: "Home" },
                 { href: "/gallery", label: "Gallery" },
                 { href: "/contact", label: "Contact" },
-                { href: "/sign-in", label: "Admin" },
               ].map((link) => (
                 <li key={link.href}>
                   <Link
@@ -49,7 +48,7 @@ export default function Footer() {
             <h4 className="label-accent text-gold mb-6">Contact</h4>
             <ul className="space-y-3 text-muted text-sm">
               <li>
-                <span className="text-text">Phone:</span> +91 98765 43210
+                <span className="text-text">Phone:</span> +91 (011) 4567-8901
               </li>
               <li>
                 <span className="text-text">Email:</span>{" "}

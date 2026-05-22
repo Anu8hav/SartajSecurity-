@@ -7,8 +7,8 @@ import { InquiryStatus } from "@/lib/data";
 
 export default async function AdminDashboard() {
   const stats = await getDashboardStats();
-  const inquiries = await getInquiries();
-  const recentInquiries = inquiries.slice(0, 5); // Take top 5
+  const inquiriesResult = await getInquiries(undefined, 5);
+  const recentInquiries = inquiriesResult.data;
 
   return (
     <div className="space-y-10">

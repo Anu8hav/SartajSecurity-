@@ -8,6 +8,8 @@ interface GalleryItem {
   id: string;
   title: string;
   category: string;
+  location?: string | null;
+  description?: string | null;
   imageUrl: string;
   assetType: string;
   featured: boolean;
@@ -72,7 +74,7 @@ export default function GalleryGrid({ items }: GalleryGridProps) {
           className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6"
         >
           <AnimatePresence mode="popLayout">
-            {filtered.map((item) => (
+            {filtered.map((item, index) => (
               <motion.div
                 key={item.id}
                 layout
@@ -96,6 +98,8 @@ export default function GalleryGrid({ items }: GalleryGridProps) {
                       ? "(max-width: 768px) 100vw, 66vw"
                       : "(max-width: 768px) 100vw, 33vw"
                   }
+                  priority={index < 3}
+                  loading={index < 3 ? undefined : "lazy"}
                 />
 
                 {/* Video play overlay */}
@@ -129,6 +133,20 @@ export default function GalleryGrid({ items }: GalleryGridProps) {
                     <h3 className="font-[family-name:var(--font-headline)] text-xl tracking-wide text-text">
                       {item.title.toUpperCase()}
                     </h3>
+                    {item.description && (
+                      <p className="text-muted text-sm mt-2 max-w-sm leading-relaxed">
+                        {item.description}
+                      </p>
+                    )}
+                    {item.location && (
+                      <div className="flex items-center gap-1 mt-3 text-muted text-xs">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span>{item.location}</span>
+                      </div>
+                    )}
                   </motion.div>
                 </div>
               </motion.div>

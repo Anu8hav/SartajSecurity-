@@ -1,16 +1,12 @@
-import { v2 as cloudinary } from "cloudinary";
+import cloudinary from "@/lib/cloudinary";
 import { auth } from "@clerk/nextjs/server";
 
-cloudinary.config({
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
 export async function POST(request: Request) {
-  // Only allow authenticated users to sign uploads
+  // Only allow authenticated admins to sign uploads
   const { userId } = await auth();
-  if (!userId) {
+  const adminId = process.env.ADMIN_USER_ID;
+
+  if (!userId || (adminId && userId !== adminId)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 

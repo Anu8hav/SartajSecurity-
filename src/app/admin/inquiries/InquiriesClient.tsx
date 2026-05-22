@@ -3,8 +3,9 @@
 import React, { useState, useTransition } from "react";
 import Badge from "@/components/ui/Badge";
 import { type InquiryStatus } from "@/lib/data";
-import { updateInquiryStatus } from "@/lib/actions/inquiry";
+import { updateInquiryStatus, deleteInquiry } from "@/lib/actions/inquiry";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 
 // Accept inquiries from server component
 interface Inquiry {
@@ -29,6 +30,8 @@ export default function InquiriesClient({ initialInquiries }: { initialInquiries
   };
 
   const handleStatusChange = (id: string, newStatus: InquiryStatus) => {
+    const previousInquiries = [...inquiries];
+
     startTransition(async () => {
       // Optimistic update
       setInquiries((prev) =>
@@ -37,9 +40,37 @@ export default function InquiriesClient({ initialInquiries }: { initialInquiries
       
       try {
         await updateInquiryStatus(id, newStatus);
+        toast.success("STATUS UPDATED", { description: `Marked as ${newStatus}` });
       } catch (error) {
         console.error("Failed to update status", error);
-        // Better error handling could be added here (e.g. toast, rollback)
+        // Rollback on failure
+        setInquiries(previousInquiries);
+        toast.error("UPDATE FAILED", {
+          description: "Could not update status. Changes have been reverted.",
+        });
+      }
+    });
+  };
+
+  const handleDelete = (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this inquiry? This action cannot be undone.")) return;
+    
+    const previousInquiries = [...inquiries];
+
+    startTransition(async () => {
+      // Optimistic update
+      setInquiries((prev) => prev.filter((inq) => inq.id !== id));
+      
+      try {
+        await deleteInquiry(id);
+        toast.success("INQUIRY PURGED", { description: "Record permanently deleted." });
+      } catch (error) {
+        console.error("Failed to delete inquiry", error);
+        // Rollback on failure
+        setInquiries(previousInquiries);
+        toast.error("PURGE FAILED", {
+          description: "Could not delete inquiry. The record has been restored.",
+        });
       }
     });
   };
@@ -83,7 +114,12 @@ export default function InquiriesClient({ initialInquiries }: { initialInquiries
                           <span className="text-xs text-muted">{inquiry.email}</span>
                         </div>
                       </div>
-                      <div className="flex-1 px-6 py-4 text-sm flex items-center">{inquiry.service}</div>
+                      <div className="flex-1 px-6 py-4 text-sm flex items-center">
+                        {inquiry.service
+                          .split('-')
+                          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                          .join(' ')}
+                      </div>
                       <div className="w-32 px-6 py-4 flex items-center">
                         <Badge status={inquiry.status as InquiryStatus} />
                       </div>
@@ -116,6 +152,15 @@ export default function InquiriesClient({ initialInquiries }: { initialInquiries
                                </div>
                                <div className="flex gap-8">
                                  <div>
+                                   <h4 className="label-accent text-gold text-[10px] mb-1">REQUIREMENT</h4>
+                                   <p className="text-sm">
+                                     {inquiry.service
+                                       .split('-')
+                                       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                                       .join(' ')}
+                                   </p>
+                                 </div>
+                                 <div>
                                    <h4 className="label-accent text-gold text-[10px] mb-1">PHONE</h4>
                                    <p className="text-sm">{inquiry.phone || "NOT PROVIDED"}</p>
                                  </div>
@@ -136,6 +181,16 @@ export default function InquiriesClient({ initialInquiries }: { initialInquiries
                                   className="bg-gold/10 text-gold border border-gold/40 px-4 py-2 text-xs label-accent hover:bg-gold hover:text-bg transition-colors disabled:opacity-50"
                                 >
                                   {isPending ? "PROCESSING..." : `MARK ${getNextStatus(inquiry.status)}`}
+                                </button>
+                                <button
+                                  disabled={isPending}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDelete(inquiry.id);
+                                  }}
+                                  className="bg-red-500/10 text-red-500 border border-red-500/40 px-4 py-2 text-xs label-accent hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50 mt-2"
+                                >
+                                  DELETE
                                 </button>
                             </div>
                           </div>

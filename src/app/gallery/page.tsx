@@ -10,16 +10,18 @@ export const metadata = {
   description: "Operational highlights and field operations of Sartaj Security personnel.",
 };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60; // ISR: revalidate every 60 seconds
 
 export default async function GalleryPage() {
-  const items = await getGalleryItems();
+  const result = await getGalleryItems();
 
   // Map the Prisma types to what GalleryGrid expects
-  const serializedItems = items.map(item => ({
+  const serializedItems = result.data.map(item => ({
     id: item.id,
     title: item.title,
     category: item.category,
+    location: item.location,
+    description: item.description,
     imageUrl: item.imageUrl,
     assetType: item.assetType,
     featured: item.featured,

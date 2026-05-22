@@ -1,22 +1,16 @@
 "use server";
 
-import { db } from "@/lib/db";
+import { db, getPaginatedResults } from "@/lib/db";
+import { galleryItemSchema } from "@/lib/validations";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
-import { v2 as cloudinary } from "cloudinary";
-
-cloudinary.config({
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+import cloudinary from "@/lib/cloudinary";
+import { GalleryItem } from "@prisma/client";
 
 // ─── Public ─────────────────────────────────────────────
 
-export async function getGalleryItems() {
-  return db.galleryItem.findMany({
-    orderBy: { createdAt: "desc" },
-  });
+export async function getGalleryItems(cursor?: string, take: number = 20) {
+  return getPaginatedResults<GalleryItem>(db.galleryItem, cursor, take);
 }
 
 // ─── Protected (Admin) ──────────────────────────────────
@@ -24,6 +18,8 @@ export async function getGalleryItems() {
 export async function createGalleryItem(data: {
   title: string;
   category: string;
+  location?: string;
+  description?: string;
   imageUrl: string;
   publicId: string;
   assetType?: string;
@@ -32,14 +28,23 @@ export async function createGalleryItem(data: {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
+  // Validate input with Zod schema
+  const parsed = galleryItemSchema.safeParse(data);
+  if (!parsed.success) {
+    const errors = parsed.error.flatten().fieldErrors;
+    throw new Error(`Validation failed: ${JSON.stringify(errors)}`);
+  }
+
   await db.galleryItem.create({
     data: {
-      title: data.title,
-      category: data.category,
-      imageUrl: data.imageUrl,
-      publicId: data.publicId,
-      assetType: data.assetType || "image",
-      featured: data.featured || false,
+      title: parsed.data.title,
+      category: parsed.data.category,
+      location: parsed.data.location || null,
+      description: parsed.data.description || null,
+      imageUrl: parsed.data.imageUrl,
+      publicId: parsed.data.publicId,
+      assetType: parsed.data.assetType || "image",
+      featured: parsed.data.featured || false,
     },
   });
 

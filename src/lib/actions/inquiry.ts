@@ -1,16 +1,37 @@
 "use server";
 
-import { db } from "@/lib/db";
+import { db, getPaginatedResults } from "@/lib/db";
 import { inquirySchema, type InquiryFormData } from "@/lib/validations";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { Resend } from "resend";
+import { escapeHtml } from "@/lib/sanitize";
+import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
+import { headers } from "next/headers";
+import { Inquiry } from "@prisma/client";
+import "@/lib/env";
 
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const resend = new Resend(process.env.RESEND_API_KEY!);
 
 // ─── Public ─────────────────────────────────────────────
 
 export async function createInquiry(data: InquiryFormData) {
+  // ── Rate Limiting ──────────────────────────────────────
+  const identifier = await getClientIdentifier();
+
+  const rateLimitResult = checkRateLimit(`inquiry:${identifier}`, {
+    maxRequests: 5,
+    windowSeconds: 300, // 5 requests per 5 minutes
+  });
+
+  if (!rateLimitResult.allowed) {
+    return {
+      success: false,
+      error: `Too many submissions. Please try again in ${rateLimitResult.retryAfterSeconds} seconds.`,
+    };
+  }
+
+  // ── Validation ─────────────────────────────────────────
   const parsed = inquirySchema.safeParse(data);
 
   if (!parsed.success) {
@@ -32,27 +53,35 @@ export async function createInquiry(data: InquiryFormData) {
       },
     });
 
-    if (resend) {
-      try {
-        await resend.emails.send({
-          from: "Sartaj Security <onboarding@resend.dev>",
-          to: process.env.ADMIN_EMAIL || "admin@example.com",
-          subject: `New Inquiry: ${parsed.data.service}`,
-          html: `
-            <h2>New Inquiry Received</h2>
-            <p><strong>Name:</strong> ${parsed.data.name}</p>
-            <p><strong>Email:</strong> ${parsed.data.email}</p>
-            <p><strong>Phone:</strong> ${parsed.data.phone || "Not provided"}</p>
-            <p><strong>Service:</strong> ${parsed.data.service}</p>
-            <hr />
-            <h3>Message</h3>
-            <p>${parsed.data.message.replace(/\n/g, '<br />')}</p>
-          `,
-        });
-      } catch (emailError) {
-        console.error("Failed to send email notification:", emailError);
-        // We don't fail the inquiry submission if the email fails
-      }
+    // ── Email Notification (sanitized) ─────────────────
+    try {
+      const safeName = escapeHtml(parsed.data.name);
+      const safeEmail = escapeHtml(parsed.data.email);
+      const safePhone = escapeHtml(parsed.data.phone || "Not provided");
+      const safeService = escapeHtml(parsed.data.service);
+      const safeMessage = escapeHtml(parsed.data.message).replace(
+        /\n/g,
+        "<br />"
+      );
+
+      await resend.emails.send({
+        from: "Sartaj Security <onboarding@resend.dev>",
+        to: process.env.ADMIN_EMAIL!,
+        subject: `New Inquiry: ${safeService}`,
+        html: `
+          <h2>New Inquiry Received</h2>
+          <p><strong>Name:</strong> ${safeName}</p>
+          <p><strong>Email:</strong> ${safeEmail}</p>
+          <p><strong>Phone:</strong> ${safePhone}</p>
+          <p><strong>Service:</strong> ${safeService}</p>
+          <hr />
+          <h3>Message</h3>
+          <p>${safeMessage}</p>
+        `,
+      });
+    } catch (emailError) {
+      console.error("Failed to send email notification:", emailError);
+      // We don't fail the inquiry submission if the email fails
     }
 
     revalidatePath("/admin/dashboard");
@@ -67,13 +96,11 @@ export async function createInquiry(data: InquiryFormData) {
 
 // ─── Protected (Admin) ──────────────────────────────────
 
-export async function getInquiries() {
+export async function getInquiries(cursor?: string, take: number = 20) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
-  return db.inquiry.findMany({
-    orderBy: { createdAt: "desc" },
-  });
+  return getPaginatedResults<Inquiry>(db.inquiry, cursor, take);
 }
 
 export async function getInquiry(id: string) {
@@ -136,4 +163,16 @@ export async function getDashboardStats() {
     galleryItems: galleryCount,
     lastUpload,
   };
+}
+
+export async function deleteInquiry(id: string) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  await db.inquiry.delete({
+    where: { id },
+  });
+
+  revalidatePath("/admin/dashboard");
+  revalidatePath("/admin/inquiries");
 }
