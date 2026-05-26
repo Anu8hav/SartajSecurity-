@@ -2,101 +2,128 @@
 
 Premium security firm offering bodyguards, event security, and corporate protection services. Verified protection since 2010.
 
-## 🚀 Tech Stack
+## Tech Stack
 
 - **Framework:** Next.js 16 (App Router)
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS v4 & Framer Motion
 - **Database:** MongoDB via Prisma ORM
-- **Authentication:** Clerk (Secured Admin Portal)
-- **Media Management:** Cloudinary (Signed, secure uploads)
+- **Authentication:** Clerk (secured admin portal)
+- **Media Management:** Cloudinary (signed, secure uploads)
 - **Emails:** Resend
 - **Validation:** Zod
 
-## ✨ Features
+## Features
 
-- **Public Landing Page & Leads:** Contact form with rate-limiting, bot protection (IP verification & Session fallbacks), and automated email notifications.
-- **Admin Dashboard:** Secure dashboard strictly available to authenticated `ADMIN_USER_ID` users.
-- **Inquiry Management:** Read, monitor, and delete prospective client leads safely.
-- **Gallery Management:** High-performance Next-Cloudinary widget uploading signed media directly to Cloudinary endpoints, synced cleanly with the MongoDB layer.
+- **Public landing page and leads:** Contact form with rate-limiting, bot protection (IP verification and session fallbacks), and automated email notifications.
+- **Admin dashboard:** Secure dashboard strictly available to authenticated `ADMIN_USER_ID` users.
+- **Inquiry management:** Read, monitor, and delete prospective client leads safely.
+- **Gallery management:** Next-Cloudinary widget uploads signed media directly to Cloudinary endpoints and syncs with MongoDB.
 
 ---
 
-## 🛠 Beginner Setup Instructions
+## Beginner Quick Start
 
-Ready to run this on your local machine? Follow these step-by-step instructions.
+Follow these steps in order. You can run the project end-to-end with no prior setup.
 
-### 1. Prerequisites
-Make sure you have installed on your computer:
-- [Node.js](https://nodejs.org/) (Version 18 or higher)
+### 1) Prerequisites
+
+Install the following:
+
+- [Node.js](https://nodejs.org/) (version 18 or higher)
 - [Git](https://git-scm.com/)
 - A free [MongoDB Atlas](https://www.mongodb.com/) cluster
 - A free [Clerk](https://clerk.com/) account
 - A free [Cloudinary](https://cloudinary.com/) account
 - A free [Resend](https://resend.com/) account
 
-### 2. Clone the Repository
+### 2) Clone the repository
+
 ```bash
 git clone https://github.com/Anu8hav/SartajSecurity-.git
 cd SartajSecurity-
 ```
 
-### 3. Install Dependencies
-Run the following command to download all required packages:
+### 3) Install dependencies
+
 ```bash
 npm install
 ```
 
-### 4. Setup Environment Variables
-You need to connect your local code to your databases and services.
-1. Create a new file named `.env.local` in the root folder (next to `package.json`).
-2. Copy the contents of `.env.example` into your new `.env.local` file.
-3. Fill in all the actual API keys and URLs from your respective dashboards:
-   - **MongoDB URL:** Needs to look like `mongodb+srv://...`
-   - **Clerk:** Look for Publishable and Secret Keys.
-   - **Cloudinary:** Look for Cloud Name, API Key, and Secret.
-   - **Resend:** Look for your API Key.
-   - **Admin Variables:** Put your own email in `ADMIN_EMAIL` and your Clerk User ID in `ADMIN_USER_ID`.
+### 4) Create your environment file
 
-### 5. Setup the Database (Prisma)
-With your database URL inside `.env.local`, hook up Prisma:
+Create a `.env.local` file in the project root (next to `package.json`) and add the variables below.
 
 ```bash
-# Generate the Prisma client
-npx prisma generate
+DATABASE_URL="mongodb+srv://<user>:<password>@<cluster>/<db>?retryWrites=true&w=majority"
 
-# Push the schema structure into your empty MongoDB
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_..."
+CLERK_SECRET_KEY="sk_test_..."
+
+CLOUDINARY_CLOUD_NAME="your_cloud_name"
+CLOUDINARY_API_KEY="your_api_key"
+CLOUDINARY_API_SECRET="your_api_secret"
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET="your_unsigned_preset"
+
+RESEND_API_KEY="re_..."
+
+ADMIN_EMAIL="you@example.com"
+ADMIN_USER_ID="user_..."
+```
+
+Where to find each value:
+
+- **MongoDB Atlas:** Use the connection string for your cluster.
+- **Clerk:** Dashboard → API Keys (publishable + secret). After you sign in once, copy your Clerk user id and set it as `ADMIN_USER_ID`.
+- **Cloudinary:** Dashboard → Product Environment (cloud name, API key, API secret). Create an upload preset and set its name in `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`.
+- **Resend:** Dashboard → API Keys.
+
+### 5) Set up the database (Prisma)
+
+```bash
+npx prisma generate
 npx prisma db push
 ```
 
-### 6. Run the Developer Server
-Start coding!
+### 6) Run the development server
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser. 
-To access the admin dashboard, visit [http://localhost:3000/admin/dashboard](http://localhost:3000/admin/dashboard) and log in.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+To access the admin dashboard, visit [http://localhost:3000/admin/dashboard](http://localhost:3000/admin/dashboard) and log in. Only the `ADMIN_USER_ID` will have access.
 
 ---
 
-## 🏗 Architecture Map
+## Useful Commands
+
+```bash
+npm run dev     # Start the dev server
+npm run build   # Create a production build
+npm run start   # Run the production server
+npm run lint    # Lint the project
+```
+
+---
+
+## Architecture Map
 
 ```text
-           [Client Browser]
-                   │
- (Public Routes)   │    (Admin Routes guarded by Clerk middleware.ts)
-   /page.tsx       │         /admin/dashboard/page.tsx
-   /gallery        │         /admin/gallery & /admin/inquiries
-                   ▼
-       [React Server Components]
-            [Server Actions] 
-         (inquiry.ts, gallery.ts)
-           │            │
-           ▼            ▼
-[Resend API]      [Prisma Client (db.ts)] ──▶ [MongoDB]
-(Emails)                │
-                        ▼
-            [Cloudinary API (via route.ts)]
+                [Client Browser]
+                            |
+ (Public Routes)   |    (Admin Routes guarded by Clerk middleware.ts)
+    /page.tsx       |         /admin/dashboard/page.tsx
+    /gallery        |         /admin/gallery & /admin/inquiries
+                            v
+          [React Server Components]
+                  [Server Actions]
+             (inquiry.ts, gallery.ts)
+                |            |
+                v            v
+[Resend API]      [Prisma Client (db.ts)] --> [MongoDB]
+(Emails)                |
+                                    v
+                  [Cloudinary API (via route.ts)]
 ```
