@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import Image from "next/image";
 import { Input, Select, TextArea } from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 interface GalleryItem {
   id: string;
@@ -25,8 +26,11 @@ const categories = [
   { value: "venue", label: "Venue Control" },
 ];
 
+import { GalleryCategory } from "@/lib/types";
+
 export default function AdminGalleryClient({ items }: { items: GalleryItem[] }) {
   const [isPending, startTransition] = useTransition();
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   
   // State for the uploaded asset waiting for details
   const [pendingAsset, setPendingAsset] = useState<{
@@ -88,7 +92,13 @@ export default function AdminGalleryClient({ items }: { items: GalleryItem[] }) 
   };
 
   const handleDelete = (id: string) => {
-    if (!confirm("Confirm deletion of tactical asset. This action is irreversible.")) return;
+    setItemToDelete(id);
+  };
+
+  const confirmDelete = () => {
+    if (!itemToDelete) return;
+    const id = itemToDelete;
+    setItemToDelete(null);
 
     startTransition(async () => {
       try {
@@ -243,6 +253,15 @@ export default function AdminGalleryClient({ items }: { items: GalleryItem[] }) 
           <p className="label-accent text-xs">Drop additional assets here to begin tactical processing</p>
         </div>
       )}
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={itemToDelete !== null}
+        title="PURGE TACTICAL ASSET?"
+        description="Are you sure you want to permanently delete this tactical asset? This action cannot be undone and will immediately remove it from all public galleries."
+        onConfirm={confirmDelete}
+        onCancel={() => setItemToDelete(null)}
+        isDesctructive={true}
+      />
     </div>
   );
 }

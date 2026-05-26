@@ -6,6 +6,7 @@ import { type InquiryStatus } from "@/lib/data";
 import { updateInquiryStatus, deleteInquiry } from "@/lib/actions/inquiry";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 // Accept inquiries from server component
 interface Inquiry {
@@ -22,6 +23,7 @@ interface Inquiry {
 export default function InquiriesClient({ initialInquiries }: { initialInquiries: Inquiry[] }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   // We manage optimistic state locally for snappier UI
   const [inquiries, setInquiries] = useState(initialInquiries);
 
@@ -53,7 +55,13 @@ export default function InquiriesClient({ initialInquiries }: { initialInquiries
   };
 
   const handleDelete = (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this inquiry? This action cannot be undone.")) return;
+    setItemToDelete(id);
+  };
+
+  const confirmDelete = () => {
+    if (!itemToDelete) return;
+    const id = itemToDelete;
+    setItemToDelete(null);
     
     const previousInquiries = [...inquiries];
 
@@ -204,6 +212,14 @@ export default function InquiriesClient({ initialInquiries }: { initialInquiries
           )}
         </div>
       </div>
+      <ConfirmDialog
+        isOpen={itemToDelete !== null}
+        title="PURGE INQUIRY RECORD?"
+        description="Are you sure you want to completely delete this inquiry record? This log will be permanently lost."
+        onConfirm={confirmDelete}
+        onCancel={() => setItemToDelete(null)}
+        isDesctructive={true}
+      />
     </div>
   );
 }

@@ -21,7 +21,9 @@ export default async function AdminLayout({
     redirect("/sign-in");
   }
 
-  const operatorName = user?.firstName ? `${user.firstName.toUpperCase()}` : "OPERATOR-01";
+  const operatorName = user?.firstName 
+    ? `${user.firstName.toUpperCase()}` 
+    : user?.emailAddresses[0]?.emailAddress?.split("@")[0].toUpperCase() || "ADMIN";
 
   return (
     <div className="flex min-h-screen bg-bg">
