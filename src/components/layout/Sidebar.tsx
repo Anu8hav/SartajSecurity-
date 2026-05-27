@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SignOutButton } from "@clerk/nextjs";
 
 const navItems = [
   {
@@ -87,7 +88,16 @@ export default function Sidebar() {
       </nav>
 
       {/* Bottom */}
-      <div className="p-6 border-t border-border">
+      <div className="p-6 border-t border-border flex flex-col gap-4">
+        <SignOutButton>
+          <button className="text-left w-full text-red-500/80 text-xs hover:text-red-500 transition-colors label-accent flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="square" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15" />
+              <path strokeLinecap="square" d="M18.75 15l3-3m0 0l-3-3m3 3h-12" />
+            </svg>
+            SIGN OUT
+          </button>
+        </SignOutButton>
         <Link
           href="/"
           className="text-muted text-xs hover:text-gold transition-colors label-accent"
